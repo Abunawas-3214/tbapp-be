@@ -5,7 +5,7 @@ import (
 	"tbapp-be/common/security"
 	"tbapp-be/internal"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -31,9 +31,9 @@ type CreateUserRequest struct {
 // @Param        request body CreateUserRequest true "Data User"
 // @Success      201 {object} internal.User
 // @Router       /users [post]
-func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
+func (h *UserHandler) CreateUser(c fiber.Ctx) error {
 	req := new(CreateUserRequest)
-	if err := c.BodyParser(req); err != nil {
+	if err := c.Bind().Body(req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"message": "Input tidak valid"})
 	}
 
@@ -64,7 +64,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 }
 
 // ListUser handles: GET /api/v1/users
-func (h *UserHandler) ListUser(c *fiber.Ctx) error {
+func (h *UserHandler) ListUser(c fiber.Ctx) error {
 	users, err := h.Queries.ListUsers(context.Background())
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil data user"})
@@ -74,7 +74,7 @@ func (h *UserHandler) ListUser(c *fiber.Ctx) error {
 }
 
 // GetUser handles: GET /api/v1/users/:id
-func (h *UserHandler) GetUser(c *fiber.Ctx) error {
+func (h *UserHandler) GetUser(c fiber.Ctx) error {
 	id := c.Params("id") // Ambil ID dari URL
 
 	user, err := h.Queries.GetUserByID(context.Background(), id)
@@ -86,7 +86,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 }
 
 // UpdateUser handles: PUT /api/v1/users/:id
-func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
+func (h *UserHandler) UpdateUser(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	type UpdateRequest struct {
@@ -96,7 +96,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	req := new(UpdateRequest)
-	if err := c.BodyParser(req); err != nil {
+	if err := c.Bind().Body(req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"message": "Input tidak valid"})
 	}
 
@@ -115,7 +115,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 }
 
 // DeleteUser handles: DELETE /api/v1/users/:id
-func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
+func (h *UserHandler) DeleteUser(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	err := h.Queries.DeleteUser(context.Background(), id)

@@ -1,6 +1,6 @@
 package users
 
-import "github.com/gofiber/fiber/v2"
+import "github.com/gofiber/fiber/v3"
 
 func InitUserRoutes(router fiber.Router, h *UserHandler) {
 	// Endpoint: /api/v1/users

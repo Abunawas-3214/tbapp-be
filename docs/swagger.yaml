@@ -1,0 +1,106 @@
+basePath: /api/v1
+definitions:
+  internal.User:
+    properties:
+      created_at:
+        $ref: '#/definitions/pgtype.Timestamptz'
+      email:
+        type: string
+      id:
+        type: string
+      is_active:
+        $ref: '#/definitions/pgtype.Bool'
+      name:
+        type: string
+      password_hash:
+        $ref: '#/definitions/pgtype.Text'
+      role_id:
+        $ref: '#/definitions/pgtype.Text'
+      updated_at:
+        $ref: '#/definitions/pgtype.Timestamptz'
+    type: object
+  modules_users.CreateUserRequest:
+    properties:
+      email:
+        example: abu@example.com
+        type: string
+      name:
+        example: Abunawas
+        type: string
+      password:
+        example: rahasia123
+        type: string
+      role_id:
+        example: ADMIN
+        type: string
+    type: object
+  pgtype.Bool:
+    properties:
+      bool:
+        type: boolean
+      valid:
+        type: boolean
+    type: object
+  pgtype.InfinityModifier:
+    enum:
+    - 1
+    - 0
+    - -1
+    format: int32
+    type: integer
+    x-enum-varnames:
+    - Infinity
+    - Finite
+    - NegativeInfinity
+  pgtype.Text:
+    properties:
+      string:
+        type: string
+      valid:
+        type: boolean
+    type: object
+  pgtype.Timestamptz:
+    properties:
+      infinityModifier:
+        $ref: '#/definitions/pgtype.InfinityModifier'
+      time:
+        type: string
+      valid:
+        type: boolean
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: fiber@swagger.io
+    name: API Support
+  description: This is a sample swagger for Fiber
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: TB App API
+  version: "1.0"
+paths:
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Admin mengundang user baru. Jika password diisi, akan di-hash.
+      parameters:
+      - description: Data User
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/modules_users.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal.User'
+      summary: Mendaftarkan user baru (oleh Admin)
+      tags:
+      - users
+swagger: "2.0"
