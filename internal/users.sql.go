@@ -11,12 +11,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type CreateManyUsersByAdminParams struct {
+	ID       string      `json:"id"`
+	RoleID   pgtype.Text `json:"role_id"`
+	Name     string      `json:"name"`
+	Email    string      `json:"email"`
+	IsActive pgtype.Bool `json:"is_active"`
+}
+
 const createRole = `-- name: CreateRole :one
-INSERT INTO roles (
-    id, name, permissions
-) VALUES (
-    $1, $2, $3
-) RETURNING id, name, permissions
+
+INSERT INTO roles (id, name, permissions)
+VALUES ($1, $2, $3) RETURNING id, name, permissions
 `
 
 type CreateRoleParams struct {
@@ -25,6 +31,7 @@ type CreateRoleParams struct {
 	Permissions []byte `json:"permissions"`
 }
 
+// --- ROLE QUERIES ---
 func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error) {
 	row := q.db.QueryRow(ctx, createRole, arg.ID, arg.Name, arg.Permissions)
 	var i Role
@@ -33,26 +40,32 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, e
 }
 
 const createUserByAdmin = `-- name: CreateUserByAdmin :one
+
+
 INSERT INTO users (
-    id, role_id, name, email
+    id, role_id, name, email, password_hash
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4, $5
 ) RETURNING id, role_id, name, email, password_hash, is_active, created_at, updated_at
 `
 
 type CreateUserByAdminParams struct {
-	ID     string      `json:"id"`
-	RoleID pgtype.Text `json:"role_id"`
-	Name   string      `json:"name"`
-	Email  string      `json:"email"`
+	ID           string      `json:"id"`
+	RoleID       pgtype.Text `json:"role_id"`
+	Name         string      `json:"name"`
+	Email        string      `json:"email"`
+	PasswordHash pgtype.Text `json:"password_hash"`
 }
 
+// modules/users/users.sql
+// --- USER QUERIES ---
 func (q *Queries) CreateUserByAdmin(ctx context.Context, arg CreateUserByAdminParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUserByAdmin,
 		arg.ID,
 		arg.RoleID,
 		arg.Name,
 		arg.Email,
+		arg.PasswordHash,
 	)
 	var i User
 	err := row.Scan(
@@ -68,6 +81,25 @@ func (q *Queries) CreateUserByAdmin(ctx context.Context, arg CreateUserByAdminPa
 	return i, err
 }
 
+const deleteManyUsers = `-- name: DeleteManyUsers :exec
+DELETE FROM users
+WHERE id = ANY($1::varchar[])
+`
+
+func (q *Queries) DeleteManyUsers(ctx context.Context, dollar_1 []string) error {
+	_, err := q.db.Exec(ctx, deleteManyUsers, dollar_1)
+	return err
+}
+
+const deleteRole = `-- name: DeleteRole :exec
+DELETE FROM roles WHERE id = $1
+`
+
+func (q *Queries) DeleteRole(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteRole, id)
+	return err
+}
+
 const deleteUser = `-- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1
@@ -79,12 +111,10 @@ func (q *Queries) DeleteUser(ctx context.Context, id string) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-
 SELECT id, role_id, name, email, password_hash, is_active, created_at, updated_at FROM users 
 WHERE email = $1 LIMIT 1
 `
 
-// modules/users/users.sql
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
@@ -122,6 +152,30 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
 	return i, err
 }
 
+const listRoles = `-- name: ListRoles :many
+SELECT id, name, permissions FROM roles
+`
+
+func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
+	rows, err := q.db.Query(ctx, listRoles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Role
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(&i.ID, &i.Name, &i.Permissions); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, role_id, name, email, password_hash, is_active, created_at, updated_at FROM users 
 ORDER BY created_at DESC
@@ -154,6 +208,25 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateRole = `-- name: UpdateRole :one
+UPDATE roles
+SET name = $2, permissions = $3
+WHERE id = $1 RETURNING id, name, permissions
+`
+
+type UpdateRoleParams struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Permissions []byte `json:"permissions"`
+}
+
+func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error) {
+	row := q.db.QueryRow(ctx, updateRole, arg.ID, arg.Name, arg.Permissions)
+	var i Role
+	err := row.Scan(&i.ID, &i.Name, &i.Permissions)
+	return i, err
 }
 
 const updateUser = `-- name: UpdateUser :one
@@ -193,4 +266,20 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateUsersStatus = `-- name: UpdateUsersStatus :exec
+UPDATE users
+SET is_active = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = ANY($1::varchar[])
+`
+
+type UpdateUsersStatusParams struct {
+	Column1  []string    `json:"column_1"`
+	IsActive pgtype.Bool `json:"is_active"`
+}
+
+func (q *Queries) UpdateUsersStatus(ctx context.Context, arg UpdateUsersStatusParams) error {
+	_, err := q.db.Exec(ctx, updateUsersStatus, arg.Column1, arg.IsActive)
+	return err
 }

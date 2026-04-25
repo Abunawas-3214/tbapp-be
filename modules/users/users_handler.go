@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"tbapp-be/common/security"
 	"tbapp-be/internal"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,36 +14,52 @@ type UserHandler struct {
 	Queries *internal.Queries
 }
 
-// CreateUser handles: POST /api/v1/users
-func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
-	// 1. DTO: Penampung input
-	type CreateRequest struct {
-		Name   string `json:"name"`
-		Email  string `json:"email"`
-		RoleID string `json:"role_id"`
-	}
+// DTO untuk Request
+type CreateUserRequest struct {
+	Name     string  `json:"name" example:"Abunawas"`
+	Email    string  `json:"email" example:"abu@example.com"`
+	RoleID   string  `json:"role_id" example:"ADMIN"`
+	Password *string `json:"password,omitempty" example:"rahasia123"`
+}
 
-	req := new(CreateRequest)
+// CreateUser godoc
+// @Summary      Mendaftarkan user baru (oleh Admin)
+// @Description  Admin mengundang user baru. Jika password diisi, akan di-hash.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body CreateUserRequest true "Data User"
+// @Success      201 {object} internal.User
+// @Router       /users [post]
+func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
+	req := new(CreateUserRequest)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"message": "Input tidak valid"})
 	}
 
-	// 2. Simpan ke database menggunakan hasil generate SQLC
+	// Logika Hashing Password
+	var hashedPw pgtype.Text
+	if req.Password != nil && *req.Password != "" {
+		hash, err := security.HashPassword(*req.Password)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"message": "Gagal mengamankan password"})
+		}
+		hashedPw = pgtype.Text{String: hash, Valid: true}
+	}
+
+	// Eksekusi SQLC
 	user, err := h.Queries.CreateUserByAdmin(context.Background(), internal.CreateUserByAdminParams{
-		ID:     uuid.New().String(),
-		Name:   req.Name,
-		Email:  req.Email,
-		RoleID: pgtype.Text{String: req.RoleID, Valid: req.RoleID != ""},
+		ID:           uuid.New().String(),
+		Name:         req.Name,
+		Email:        req.Email,
+		RoleID:       pgtype.Text{String: req.RoleID, Valid: req.RoleID != ""},
+		PasswordHash: hashedPw,
 	})
 
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"message": "Gagal menyimpan user",
-			"error":   err.Error(),
-		})
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// 3. Kirim balik data user yang baru dibuat
 	return c.Status(201).JSON(user)
 }
 

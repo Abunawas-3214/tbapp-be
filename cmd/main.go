@@ -4,9 +4,10 @@ import (
 	"log"
 	"tbapp-be/config"
 	"tbapp-be/internal"
-	"tbapp-be/modules/users" // Jangan lupa import modulnya
+	"tbapp-be/modules/users"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 )
 
 func main() {
@@ -27,4 +28,7 @@ func main() {
 
 	// 5. Jalankan Server
 	log.Fatal(app.Listen(":3000"))
+
+	// Swagger
+	app.Get("/swagger/*", swagger.HandlerDefault)
 }

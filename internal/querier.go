@@ -9,14 +9,22 @@ import (
 )
 
 type Querier interface {
+	CreateManyUsersByAdmin(ctx context.Context, arg []CreateManyUsersByAdminParams) (int64, error)
+	// --- ROLE QUERIES ---
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
-	CreateUserByAdmin(ctx context.Context, arg CreateUserByAdminParams) (User, error)
-	DeleteUser(ctx context.Context, id string) error
 	// modules/users/users.sql
+	// --- USER QUERIES ---
+	CreateUserByAdmin(ctx context.Context, arg CreateUserByAdminParams) (User, error)
+	DeleteManyUsers(ctx context.Context, dollar_1 []string) error
+	DeleteRole(ctx context.Context, id string) error
+	DeleteUser(ctx context.Context, id string) error
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
+	ListRoles(ctx context.Context) ([]Role, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateUsersStatus(ctx context.Context, arg UpdateUsersStatusParams) error
 }
 
 var _ Querier = (*Queries)(nil)
