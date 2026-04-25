@@ -1,0 +1,13 @@
+version: "2"
+sql:
+  - schema: "migrations/"        # Tempat file CREATE TABLE (SQL Migrations)
+    queries: "modules/**/*.sql"   # Mencari file .sql di semua subfolder modules/
+    engine: "postgresql"
+    gen:
+      go:
+        package: "internal"      # Kode Go hasil generate akan masuk ke folder internal/
+        out: "internal"          # Folder outputnya
+        emit_json_tags: true     # Agar struct Go punya tag JSON (untuk API)
+        emit_prepared_queries: false
+        sql_package: "pgx/v5"    # Menggunakan driver pgx v5
+        emit_interface: true     # Sangat berguna untuk testing nantinya
