@@ -233,24 +233,30 @@ const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET 
     name = $2,
-    role_id = $3,
-    is_active = $4,
+    email = $3,
+    password_hash = $4,
+    role_id = $5,
+    is_active = $6,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING id, role_id, name, email, password_hash, is_active, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	ID       string      `json:"id"`
-	Name     string      `json:"name"`
-	RoleID   pgtype.Text `json:"role_id"`
-	IsActive pgtype.Bool `json:"is_active"`
+	ID           string      `json:"id"`
+	Name         string      `json:"name"`
+	Email        string      `json:"email"`
+	PasswordHash pgtype.Text `json:"password_hash"`
+	RoleID       pgtype.Text `json:"role_id"`
+	IsActive     pgtype.Bool `json:"is_active"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.ID,
 		arg.Name,
+		arg.Email,
+		arg.PasswordHash,
 		arg.RoleID,
 		arg.IsActive,
 	)

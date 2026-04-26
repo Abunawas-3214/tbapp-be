@@ -29,8 +29,10 @@ ORDER BY created_at DESC;
 UPDATE users
 SET 
     name = $2,
-    role_id = $3,
-    is_active = $4,
+    email = $3,
+    password_hash = $4,
+    role_id = $5,
+    is_active = $6,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING *;

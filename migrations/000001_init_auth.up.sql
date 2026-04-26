@@ -1,4 +1,50 @@
--- 1. Fungsi Trigger untuk update otomatis updated_at
+-- 1. AKTIFKAN EKSTENSI UUID
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TYPE admin_level AS ENUM ('SUPERADMIN', 'ADMIN');
+
+-- 2. TABEL USERS (IDENTITAS GLOBAL)
+CREATE TABLE IF NOT EXISTS public.users (
+    id VARCHAR(50) PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    email_verified TIMESTAMP WITH TIME ZONE,
+    image VARCHAR(255),
+    password_hash TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. TABEL STORES (DAFTAR TENANT/TOKO)
+CREATE TABLE IF NOT EXISTS public.stores (
+    id VARCHAR(50) PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    schema_name VARCHAR(100) UNIQUE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. TABEL USER_STORE_ACCESS (JEMBATAN OTORISASI)
+CREATE TABLE IF NOT EXISTS public.user_store_access (
+    id VARCHAR(50) PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(50) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    store_id VARCHAR(50) NOT NULL REFERENCES public.stores(id) ON DELETE CASCADE,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    assigned_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, store_id) -- Mencegah duplikasi akses yang sama
+);
+
+-- 5. TABEL SYSTEM_ADMINS (SUPERADMIN)
+CREATE TABLE IF NOT EXISTS public.system_admins (
+    id VARCHAR(50) PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(50) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    level admin_level NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. OTOMASI UPDATED_AT UNTUK USERS
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -7,43 +53,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 2. Tabel Roles
-CREATE TABLE IF NOT EXISTS roles (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE,
-    permissions JSONB NOT NULL DEFAULT '[]'
-);
-
--- 3. Tabel Users (Hanya orang di sini yang bisa login)
-CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(50) PRIMARY KEY,
-    role_id VARCHAR(50) REFERENCES roles(id),
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(150) UNIQUE NOT NULL,
-    password_hash TEXT, -- Bisa null jika hanya login Google
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 4. Tabel User Accounts (Pintu masuk Google OAuth)
-CREATE TABLE IF NOT EXISTS user_accounts (
-    id VARCHAR(50) PRIMARY KEY,
-    user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    provider VARCHAR(50) NOT NULL,           -- 'google'
-    provider_account_id VARCHAR(255) NOT NULL, -- ID unik dari Google
-    refresh_token TEXT,
-    access_token TEXT,
-    expires_at BIGINT,
-    token_type VARCHAR(50),
-    scope VARCHAR(255),
-    id_token TEXT,
-    session_state TEXT,
-    UNIQUE(provider, provider_account_id)
-);
-
--- 5. Pasang Trigger
 CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON users
+    BEFORE UPDATE ON public.users
     FOR EACH ROW
     EXECUTE PROCEDURE update_updated_at_column();

@@ -44,7 +44,7 @@ func main() {
 		BasePath: "/",
 		FilePath: "./docs/swagger.json",
 		Path:     "swagger",
-		Title:    "TB App API Documentationi",
+		Title:    "TB App API Documentation",
 	}
 
 	app.Use(swagger.New(cfg))
