@@ -5,36 +5,86 @@
 package internal
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Role struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Permissions []byte `json:"permissions"`
+type AdminLevel string
+
+const (
+	AdminLevelSUPERADMIN AdminLevel = "SUPERADMIN"
+	AdminLevelADMIN      AdminLevel = "ADMIN"
+)
+
+func (e *AdminLevel) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = AdminLevel(s)
+	case string:
+		*e = AdminLevel(s)
+	default:
+		return fmt.Errorf("unsupported scan type for AdminLevel: %T", src)
+	}
+	return nil
+}
+
+type NullAdminLevel struct {
+	AdminLevel AdminLevel `json:"admin_level"`
+	Valid      bool       `json:"valid"` // Valid is true if AdminLevel is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullAdminLevel) Scan(value interface{}) error {
+	if value == nil {
+		ns.AdminLevel, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.AdminLevel.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullAdminLevel) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.AdminLevel), nil
+}
+
+type Store struct {
+	ID         string             `json:"id"`
+	Name       string             `json:"name"`
+	Slug       string             `json:"slug"`
+	SchemaName string             `json:"schema_name"`
+	IsActive   bool               `json:"is_active"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+type SystemAdmin struct {
+	ID        string             `json:"id"`
+	UserID    string             `json:"user_id"`
+	Level     AdminLevel         `json:"level"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type User struct {
-	ID           string             `json:"id"`
-	RoleID       pgtype.Text        `json:"role_id"`
-	Name         string             `json:"name"`
-	Email        string             `json:"email"`
-	PasswordHash pgtype.Text        `json:"password_hash"`
-	IsActive     pgtype.Bool        `json:"is_active"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID            string             `json:"id"`
+	Name          string             `json:"name"`
+	Email         string             `json:"email"`
+	EmailVerified pgtype.Timestamptz `json:"email_verified"`
+	Image         pgtype.Text        `json:"image"`
+	PasswordHash  pgtype.Text        `json:"password_hash"`
+	IsActive      bool               `json:"is_active"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
-type UserAccount struct {
-	ID                string      `json:"id"`
-	UserID            string      `json:"user_id"`
-	Provider          string      `json:"provider"`
-	ProviderAccountID string      `json:"provider_account_id"`
-	RefreshToken      pgtype.Text `json:"refresh_token"`
-	AccessToken       pgtype.Text `json:"access_token"`
-	ExpiresAt         pgtype.Int8 `json:"expires_at"`
-	TokenType         pgtype.Text `json:"token_type"`
-	Scope             pgtype.Text `json:"scope"`
-	IDToken           pgtype.Text `json:"id_token"`
-	SessionState      pgtype.Text `json:"session_state"`
+type UserStoreAccess struct {
+	ID         string             `json:"id"`
+	UserID     string             `json:"user_id"`
+	StoreID    string             `json:"store_id"`
+	IsActive   bool               `json:"is_active"`
+	AssignedAt pgtype.Timestamptz `json:"assigned_at"`
 }

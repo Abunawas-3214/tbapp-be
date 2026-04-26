@@ -1,7 +1,34 @@
 basePath: /api/v1
 definitions:
-  internal.User:
+  internal.AdminLevel:
+    enum:
+    - SUPERADMIN
+    - ADMIN
+    type: string
+    x-enum-varnames:
+    - AdminLevelSUPERADMIN
+    - AdminLevelADMIN
+  internal.GetSystemAdminByIDRow:
     properties:
+      admin_level:
+        $ref: '#/definitions/internal.AdminLevel'
+      created_at:
+        $ref: '#/definitions/pgtype.Timestamptz'
+      email:
+        type: string
+      id:
+        type: string
+      image:
+        $ref: '#/definitions/pgtype.Text'
+      is_active:
+        type: boolean
+      name:
+        type: string
+    type: object
+  internal.ListSystemAdminsRow:
+    properties:
+      admin_level:
+        $ref: '#/definitions/internal.AdminLevel'
       created_at:
         $ref: '#/definitions/pgtype.Timestamptz'
       email:
@@ -9,20 +36,20 @@ definitions:
       id:
         type: string
       is_active:
-        $ref: '#/definitions/pgtype.Bool'
+        type: boolean
       name:
         type: string
-      password_hash:
-        $ref: '#/definitions/pgtype.Text'
-      role_id:
-        $ref: '#/definitions/pgtype.Text'
-      updated_at:
-        $ref: '#/definitions/pgtype.Timestamptz'
     type: object
-  modules_users.CreateUserRequest:
+  modules_users.CreateSystemAdminRequest:
     properties:
       email:
         example: abu@example.com
+        type: string
+      level:
+        enum:
+        - SUPERADMIN
+        - ADMIN
+        example: SUPERADMIN
         type: string
       name:
         example: Abunawas
@@ -30,28 +57,25 @@ definitions:
       password:
         example: rahasia123
         type: string
-      role_id:
-        example: ADMIN
-        type: string
+    required:
+    - level
     type: object
-  modules_users.UpdateUserRequest:
+  modules_users.UpdateSystemAdminRequest:
     properties:
       is_active:
         example: true
         type: boolean
+      level:
+        enum:
+        - SUPERADMIN
+        - ADMIN
+        example: ADMIN
+        type: string
       name:
         example: Abunawas Updated
         type: string
-      role_id:
-        example: USER
-        type: string
-    type: object
-  pgtype.Bool:
-    properties:
-      bool:
-        type: boolean
-      valid:
-        type: boolean
+    required:
+    - level
     type: object
   pgtype.InfinityModifier:
     enum:
@@ -95,7 +119,7 @@ info:
 paths:
   /users:
     get:
-      description: Menampilkan semua user yang terdaftar di sistem.
+      description: Menampilkan semua system admin yang terdaftar di sistem.
       produces:
       - application/json
       responses:
@@ -103,35 +127,37 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal.User'
+              $ref: '#/definitions/internal.ListSystemAdminsRow'
             type: array
-      summary: Mengambil daftar semua user
+      summary: Mengambil daftar semua system admin
       tags:
       - users
     post:
       consumes:
       - application/json
-      description: Admin mengundang user baru. Jika password diisi, akan di-hash.
+      description: Membuat user dan menetapkannya sebagai system admin. Jika password
+        diisi, akan di-hash.
       parameters:
-      - description: Data User
+      - description: Data Admin
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/modules_users.CreateUserRequest'
+          $ref: '#/definitions/modules_users.CreateSystemAdminRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal.User'
-      summary: Mendaftarkan user baru (oleh Admin)
+            $ref: '#/definitions/internal.GetSystemAdminByIDRow'
+      summary: Mendaftarkan system admin baru
       tags:
       - users
   /users/{id}:
     delete:
-      description: Menghapus user dari sistem berdasarkan ID.
+      description: Menghapus user dari sistem berdasarkan ID. Menghapus otomatis akses
+        admin karena Cascade.
       parameters:
       - description: User ID
         in: path
@@ -147,11 +173,11 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Menghapus user
+      summary: Menghapus user dan admin
       tags:
       - users
     get:
-      description: Menampilkan informasi lengkap user tertentu.
+      description: Menampilkan informasi lengkap admin tertentu.
       parameters:
       - description: User ID
         in: path
@@ -164,20 +190,20 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal.User'
+            $ref: '#/definitions/internal.GetSystemAdminByIDRow'
         "404":
           description: Not Found
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Mengambil detail user berdasarkan ID
+      summary: Mengambil detail admin berdasarkan ID
       tags:
       - users
     put:
       consumes:
       - application/json
-      description: Mengubah informasi nama, role, atau status aktif user.
+      description: Mengubah informasi profil, foto, atau level admin.
       parameters:
       - description: User ID
         in: path
@@ -189,15 +215,15 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/modules_users.UpdateUserRequest'
+          $ref: '#/definitions/modules_users.UpdateSystemAdminRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal.User'
-      summary: Memperbarui data user
+            $ref: '#/definitions/internal.GetSystemAdminByIDRow'
+      summary: Memperbarui data system admin
       tags:
       - users
 swagger: "2.0"

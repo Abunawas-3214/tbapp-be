@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS public.user_store_access (
 CREATE TABLE IF NOT EXISTS public.system_admins (
     id VARCHAR(50) PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id VARCHAR(50) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    level admin_level NOT NULL,
+    level admin_level NOT NULL DEFAULT 'ADMIN',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

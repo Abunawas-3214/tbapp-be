@@ -25,28 +25,28 @@ const docTemplate = `{
     "paths": {
         "/users": {
             "get": {
-                "description": "Menampilkan semua user yang terdaftar di sistem.",
+                "description": "Menampilkan semua system admin yang terdaftar di sistem.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Mengambil daftar semua user",
+                "summary": "Mengambil daftar semua system admin",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal.User"
+                                "$ref": "#/definitions/internal.ListSystemAdminsRow"
                             }
                         }
                     }
                 }
             },
             "post": {
-                "description": "Admin mengundang user baru. Jika password diisi, akan di-hash.",
+                "description": "Membuat user dan menetapkannya sebagai system admin. Jika password diisi, akan di-hash.",
                 "consumes": [
                     "application/json"
                 ],
@@ -56,15 +56,15 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Mendaftarkan user baru (oleh Admin)",
+                "summary": "Mendaftarkan system admin baru",
                 "parameters": [
                     {
-                        "description": "Data User",
+                        "description": "Data Admin",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules_users.CreateUserRequest"
+                            "$ref": "#/definitions/modules_users.CreateSystemAdminRequest"
                         }
                     }
                 ],
@@ -72,7 +72,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal.User"
+                            "$ref": "#/definitions/internal.GetSystemAdminByIDRow"
                         }
                     }
                 }
@@ -80,14 +80,14 @@ const docTemplate = `{
         },
         "/users/{id}": {
             "get": {
-                "description": "Menampilkan informasi lengkap user tertentu.",
+                "description": "Menampilkan informasi lengkap admin tertentu.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Mengambil detail user berdasarkan ID",
+                "summary": "Mengambil detail admin berdasarkan ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -101,7 +101,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal.User"
+                            "$ref": "#/definitions/internal.GetSystemAdminByIDRow"
                         }
                     },
                     "404": {
@@ -116,7 +116,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Mengubah informasi nama, role, atau status aktif user.",
+                "description": "Mengubah informasi profil, foto, atau level admin.",
                 "consumes": [
                     "application/json"
                 ],
@@ -126,7 +126,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Memperbarui data user",
+                "summary": "Memperbarui data system admin",
                 "parameters": [
                     {
                         "type": "string",
@@ -141,7 +141,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules_users.UpdateUserRequest"
+                            "$ref": "#/definitions/modules_users.UpdateSystemAdminRequest"
                         }
                     }
                 ],
@@ -149,20 +149,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal.User"
+                            "$ref": "#/definitions/internal.GetSystemAdminByIDRow"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "Menghapus user dari sistem berdasarkan ID.",
+                "description": "Menghapus user dari sistem berdasarkan ID. Menghapus otomatis akses admin karena Cascade.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Menghapus user",
+                "summary": "Menghapus user dan admin",
                 "parameters": [
                     {
                         "type": "string",
@@ -187,9 +187,49 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal.User": {
+        "internal.AdminLevel": {
+            "type": "string",
+            "enum": [
+                "SUPERADMIN",
+                "ADMIN"
+            ],
+            "x-enum-varnames": [
+                "AdminLevelSUPERADMIN",
+                "AdminLevelADMIN"
+            ]
+        },
+        "internal.GetSystemAdminByIDRow": {
             "type": "object",
             "properties": {
+                "admin_level": {
+                    "$ref": "#/definitions/internal.AdminLevel"
+                },
+                "created_at": {
+                    "$ref": "#/definitions/pgtype.Timestamptz"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "$ref": "#/definitions/pgtype.Text"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal.ListSystemAdminsRow": {
+            "type": "object",
+            "properties": {
+                "admin_level": {
+                    "$ref": "#/definitions/internal.AdminLevel"
+                },
                 "created_at": {
                     "$ref": "#/definitions/pgtype.Timestamptz"
                 },
@@ -200,28 +240,30 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "is_active": {
-                    "$ref": "#/definitions/pgtype.Bool"
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
-                },
-                "password_hash": {
-                    "$ref": "#/definitions/pgtype.Text"
-                },
-                "role_id": {
-                    "$ref": "#/definitions/pgtype.Text"
-                },
-                "updated_at": {
-                    "$ref": "#/definitions/pgtype.Timestamptz"
                 }
             }
         },
-        "modules_users.CreateUserRequest": {
+        "modules_users.CreateSystemAdminRequest": {
             "type": "object",
+            "required": [
+                "level"
+            ],
             "properties": {
                 "email": {
                     "type": "string",
                     "example": "abu@example.com"
+                },
+                "level": {
+                    "type": "string",
+                    "enum": [
+                        "SUPERADMIN",
+                        "ADMIN"
+                    ],
+                    "example": "SUPERADMIN"
                 },
                 "name": {
                     "type": "string",
@@ -230,38 +272,30 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "example": "rahasia123"
-                },
-                "role_id": {
-                    "type": "string",
-                    "example": "ADMIN"
                 }
             }
         },
-        "modules_users.UpdateUserRequest": {
+        "modules_users.UpdateSystemAdminRequest": {
             "type": "object",
+            "required": [
+                "level"
+            ],
             "properties": {
                 "is_active": {
                     "type": "boolean",
                     "example": true
                 },
+                "level": {
+                    "type": "string",
+                    "enum": [
+                        "SUPERADMIN",
+                        "ADMIN"
+                    ],
+                    "example": "ADMIN"
+                },
                 "name": {
                     "type": "string",
                     "example": "Abunawas Updated"
-                },
-                "role_id": {
-                    "type": "string",
-                    "example": "USER"
-                }
-            }
-        },
-        "pgtype.Bool": {
-            "type": "object",
-            "properties": {
-                "bool": {
-                    "type": "boolean"
-                },
-                "valid": {
-                    "type": "boolean"
                 }
             }
         },

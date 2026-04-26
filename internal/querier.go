@@ -9,22 +9,14 @@ import (
 )
 
 type Querier interface {
-	CreateManyUsersByAdmin(ctx context.Context, arg []CreateManyUsersByAdminParams) (int64, error)
-	// --- ROLE QUERIES ---
-	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
-	// modules/users/users.sql
-	// --- USER QUERIES ---
-	CreateUserByAdmin(ctx context.Context, arg CreateUserByAdminParams) (User, error)
-	DeleteManyUsers(ctx context.Context, dollar_1 []string) error
-	DeleteRole(ctx context.Context, id string) error
+	CreateSystemAdmin(ctx context.Context, arg CreateSystemAdminParams) (SystemAdmin, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteUser(ctx context.Context, id string) error
-	GetUserByEmail(ctx context.Context, email string) (User, error)
-	GetUserByID(ctx context.Context, id string) (User, error)
-	ListRoles(ctx context.Context) ([]Role, error)
-	ListUsers(ctx context.Context) ([]User, error)
-	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)
+	GetSystemAdminByEmail(ctx context.Context, email string) (GetSystemAdminByEmailRow, error)
+	GetSystemAdminByID(ctx context.Context, id string) (GetSystemAdminByIDRow, error)
+	ListSystemAdmins(ctx context.Context) ([]ListSystemAdminsRow, error)
+	UpdateSystemAdminLevel(ctx context.Context, arg UpdateSystemAdminLevelParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
-	UpdateUsersStatus(ctx context.Context, arg UpdateUsersStatusParams) error
 }
 
 var _ Querier = (*Queries)(nil)
