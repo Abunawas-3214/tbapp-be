@@ -2,14 +2,18 @@ package main
 
 import (
 	"log"
+	"os"
 	"tbapp-be/config"
-	"tbapp-be/internal"
-	"tbapp-be/modules/users"
+	"tbapp-be/internal/db"
 
 	_ "tbapp-be/docs"
 
+	"tbapp-be/modules/global/auth"
+	"tbapp-be/modules/global/sysadmin"
+
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v3"
+	"github.com/joho/godotenv"
 )
 
 // @title TB App API
@@ -23,20 +27,32 @@ import (
 // @host localhost:3000
 // @BasePath /api/v1
 func main() {
+	// Muat file .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	// 1. Connect ke Neon
 	dbPool := config.ConnectDB()
 	defer dbPool.Close()
 
 	// 2. Inisialisasi SQLC Queries
-	queries := internal.New(dbPool)
+	queries := db.New(dbPool)
 
 	// 3. Setup Fiber
 	app := fiber.New()
 	api := app.Group("/api/v1")
+	globalGroup := api.Group("/global")
 
-	// 4. Daftarkan Modul Users
-	userHandler := &users.UserHandler{Queries: queries}
-	users.InitUserRoutes(api, userHandler)
+	// Module: Auth
+	authService := auth.NewService(queries)
+	authHandler := auth.NewHandler(authService)
+	authHandler.RegisterRoutes(globalGroup)
+
+	// Module: Sysadmin
+	adminService := sysadmin.NewService(queries, dbPool)
+	adminHandler := sysadmin.NewHandler(adminService)
+	adminHandler.RegisterRoutes(globalGroup)
 
 	// Swagger
 	cfg := swagger.Config{
@@ -49,6 +65,5 @@ func main() {
 
 	app.Use(swagger.New(cfg))
 
-	// 5. Jalankan Server
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(":" + os.Getenv("PORT")))
 }

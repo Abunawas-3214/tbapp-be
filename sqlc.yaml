@@ -1,13 +1,14 @@
 version: "2"
 sql:
-  - schema: "migrations/"        # Tempat file CREATE TABLE (SQL Migrations)
-    queries: "modules/**/*.sql"   # Mencari file .sql di semua subfolder modules/
+  - schema: "database/migrations/"      # Mencari file .sql hasil migrasi
+    queries: "database/queries/"       # Mencari file users.sql dkk
     engine: "postgresql"
     gen:
       go:
-        package: "internal"      # Kode Go hasil generate akan masuk ke folder internal/
-        out: "internal"          # Folder outputnya
-        emit_json_tags: true     # Agar struct Go punya tag JSON (untuk API)
-        emit_prepared_queries: false
-        sql_package: "pgx/v5"    # Menggunakan driver pgx v5
-        emit_interface: true     # Sangat berguna untuk testing nantinya
+        package: "db"                  # Nama package saat di-import (internal/db)
+        out: "internal/db"             # Folder tujuan hasil generate
+        sql_package: "pgx/v5"          # Menggunakan driver pgx v5
+        emit_json_tags: true           # Menambahkan tag JSON pada struct
+        emit_interface: true           # Penting untuk Mocking/Testing nanti
+        emit_db_tags: true             # Berguna jika butuh mapping db manual
+        emit_prepared_queries: false   # Biasanya dimatikan untuk aplikasi web modern
