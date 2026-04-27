@@ -12,3 +12,11 @@ sql:
         emit_interface: true           # Penting untuk Mocking/Testing nanti
         emit_db_tags: true             # Berguna jika butuh mapping db manual
         emit_prepared_queries: false   # Biasanya dimatikan untuk aplikasi web modern
+
+  - schema: "database/blueprints/tenant_blueprint.sql"
+    queries: "database/tenant_queries"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "tenantdb"
+        out: "internal/tenantdb"
