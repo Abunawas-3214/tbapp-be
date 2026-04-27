@@ -5,11 +5,13 @@ import (
 	"os"
 	"tbapp-be/config"
 	"tbapp-be/internal/db"
+	"tbapp-be/internal/tenantdb"
 
 	_ "tbapp-be/docs"
 
 	"tbapp-be/modules/global/auth"
 	"tbapp-be/modules/global/sysadmin"
+	"tbapp-be/modules/global/tenant"
 
 	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v3"
@@ -37,7 +39,8 @@ func main() {
 	defer dbPool.Close()
 
 	// 2. Inisialisasi SQLC Queries
-	queries := db.New(dbPool)
+	repoPublic := db.New(dbPool)
+	repoTenant := tenantdb.New(dbPool)
 
 	// 3. Setup Fiber
 	app := fiber.New()
@@ -45,14 +48,19 @@ func main() {
 	globalGroup := api.Group("/global")
 
 	// Module: Auth
-	authService := auth.NewService(queries)
+	authService := auth.NewService(repoPublic)
 	authHandler := auth.NewHandler(authService)
 	authHandler.RegisterRoutes(globalGroup)
 
 	// Module: Sysadmin
-	adminService := sysadmin.NewService(queries, dbPool)
+	adminService := sysadmin.NewService(repoPublic, dbPool)
 	adminHandler := sysadmin.NewHandler(adminService)
 	adminHandler.RegisterRoutes(globalGroup)
+
+	// Module: Tenant
+	tenantService := tenant.NewService(repoPublic, repoTenant, dbPool)
+	tenantHandler := tenant.NewHandler(tenantService)
+	tenantHandler.RegisterRoutes(globalGroup)
 
 	// Swagger
 	cfg := swagger.Config{

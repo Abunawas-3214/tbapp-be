@@ -19,16 +19,19 @@ type Querier interface {
 	// ==========================================
 	// Digunakan oleh: Modul Sysadmin (Global) & Modul Tenant (Onboarding)
 	CreateBaseUser(ctx context.Context, arg CreateBaseUserParams) (User, error)
+	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
 	// ==========================================
 	// DOMAIN: Otoritas Admin Sistem (Global)
 	// ==========================================
 	// Digunakan oleh: Modul Sysadmin
 	CreateSystemAdmin(ctx context.Context, arg CreateSystemAdminParams) (SystemAdmin, error)
+	CreateUserStoreAccess(ctx context.Context, arg CreateUserStoreAccessParams) error
 	DeleteSystemAdmin(ctx context.Context, id string) error
 	// Catatan: Akan memicu CASCADE ke system_admins & user_store_access
 	DeleteUser(ctx context.Context, id string) error
 	// Digunakan oleh: Middleware untuk cek apakah user punya akses Superadmin
 	GetAdminAccess(ctx context.Context, userID string) (AdminLevel, error)
+	GetStoreBySlug(ctx context.Context, slug string) (Store, error)
 	GetSystemAdminByID(ctx context.Context, id string) (GetSystemAdminByIDRow, error)
 	// Digunakan untuk: Proses login awal
 	GetUserByEmail(ctx context.Context, email string) (User, error)

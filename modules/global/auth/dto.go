@@ -5,11 +5,20 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type StoreAccessDTO struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Slug       string `json:"slug"`
+	SchemaName string `json:"schema_name"`
+}
+
 type LoginResponse struct {
 	Token string `json:"token"`
 	User  struct {
-		ID    string `json:"id"`
-		Name  string `json:"name"`
-		Email string `json:"email"`
+		ID         string  `json:"id"`
+		Name       string  `json:"name"`
+		Email      string  `json:"email"`
+		AdminLevel *string `json:"admin_level,omitempty"`
 	} `json:"user"`
+	Stores []StoreAccessDTO `json:"stores,omitempty"`
 }
