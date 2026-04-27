@@ -42,3 +42,30 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		"data":    res,
 	})
 }
+
+func (h *Handler) SelectStore(c fiber.Ctx) error {
+	req := new(SelectStoreRequest)
+
+	if err := c.Bind().JSON(req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Format data tidak valid"})
+	}
+
+	// TODO: Validasi req menggunakan validator jika ada
+
+	// Ambil UserID dari context Fiber (Hasil set dari Global Auth Middleware sebelumnya)
+	// Asumsi middleware Anda menyimpan ID user di c.Locals("user_id")
+	userID, ok := c.Locals("user_id").(string)
+	if !ok || userID == "" {
+		return c.Status(401).JSON(fiber.Map{"error": "Sesi tidak valid, silakan login ulang"})
+	}
+
+	res, err := h.service.SelectStore(c.Context(), userID, *req)
+	if err != nil {
+		return c.Status(403).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": res.Message,
+		"data":    res,
+	})
+}

@@ -22,3 +22,13 @@ type LoginResponse struct {
 	} `json:"user"`
 	Stores []StoreAccessDTO `json:"stores,omitempty"`
 }
+
+type SelectStoreRequest struct {
+	StoreID string `json:"store_id" validate:"required"`
+}
+
+type SelectStoreResponse struct {
+	Token      string `json:"token"`
+	SchemaName string `json:"schema_name"`
+	Message    string `json:"message"`
+}
