@@ -67,3 +67,19 @@ func (q *Queries) GetStoreBySlug(ctx context.Context, slug string) (Store, error
 	)
 	return i, err
 }
+
+const updateStoreName = `-- name: UpdateStoreName :exec
+UPDATE stores 
+SET name = $2, updated_at = CURRENT_TIMESTAMP 
+WHERE id = $1
+`
+
+type UpdateStoreNameParams struct {
+	ID   string `db:"id" json:"id"`
+	Name string `db:"name" json:"name"`
+}
+
+func (q *Queries) UpdateStoreName(ctx context.Context, arg UpdateStoreNameParams) error {
+	_, err := q.db.Exec(ctx, updateStoreName, arg.ID, arg.Name)
+	return err
+}

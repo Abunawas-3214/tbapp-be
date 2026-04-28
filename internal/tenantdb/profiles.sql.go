@@ -12,23 +12,46 @@ import (
 )
 
 const getStoreProfile = `-- name: GetStoreProfile :one
-SELECT id, name, description, address, phone, email, tax_id, logo_url, created_at, updated_at FROM store_profiles LIMIT 1
+SELECT 
+    s.id as store_id,
+    s.name as store_name,
+    sp.description,
+    sp.address,
+    sp.phone,
+    sp.email,
+    sp.tax_id,
+    sp.logo_url,
+    sp.receipt_footer
+FROM public.stores s
+LEFT JOIN store_profiles sp ON s.id = sp.store_id
+WHERE s.id = $1 LIMIT 1
 `
 
-func (q *Queries) GetStoreProfile(ctx context.Context) (StoreProfile, error) {
-	row := q.db.QueryRow(ctx, getStoreProfile)
-	var i StoreProfile
+type GetStoreProfileRow struct {
+	StoreID       string      `db:"store_id" json:"store_id"`
+	StoreName     string      `db:"store_name" json:"store_name"`
+	Description   pgtype.Text `db:"description" json:"description"`
+	Address       pgtype.Text `db:"address" json:"address"`
+	Phone         pgtype.Text `db:"phone" json:"phone"`
+	Email         pgtype.Text `db:"email" json:"email"`
+	TaxID         pgtype.Text `db:"tax_id" json:"tax_id"`
+	LogoUrl       pgtype.Text `db:"logo_url" json:"logo_url"`
+	ReceiptFooter pgtype.Text `db:"receipt_footer" json:"receipt_footer"`
+}
+
+func (q *Queries) GetStoreProfile(ctx context.Context, id string) (GetStoreProfileRow, error) {
+	row := q.db.QueryRow(ctx, getStoreProfile, id)
+	var i GetStoreProfileRow
 	err := row.Scan(
-		&i.ID,
-		&i.Name,
+		&i.StoreID,
+		&i.StoreName,
 		&i.Description,
 		&i.Address,
 		&i.Phone,
 		&i.Email,
 		&i.TaxID,
 		&i.LogoUrl,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.ReceiptFooter,
 	)
 	return i, err
 }
@@ -36,51 +59,47 @@ func (q *Queries) GetStoreProfile(ctx context.Context) (StoreProfile, error) {
 const updateStoreProfile = `-- name: UpdateStoreProfile :one
 UPDATE store_profiles
 SET 
-    name = $1,
-    description = $2,
-    address = $3,
-    phone = $4,
-    email = $5,
-    tax_id = $6,
-    logo_url = $7,
+    description = $1,
+    address = $2,
+    phone = $3,
+    email = $4,
+    tax_id = $5,
+    logo_url = $6,
     updated_at = CURRENT_TIMESTAMP
-WHERE id = $8
-RETURNING id, name, description, address, phone, email, tax_id, logo_url, created_at, updated_at
+WHERE store_id = $7
+RETURNING store_id, description, address, phone, email, tax_id, logo_url, receipt_footer, updated_at
 `
 
 type UpdateStoreProfileParams struct {
-	Name        string      `db:"name" json:"name"`
 	Description pgtype.Text `db:"description" json:"description"`
 	Address     pgtype.Text `db:"address" json:"address"`
 	Phone       pgtype.Text `db:"phone" json:"phone"`
 	Email       pgtype.Text `db:"email" json:"email"`
 	TaxID       pgtype.Text `db:"tax_id" json:"tax_id"`
 	LogoUrl     pgtype.Text `db:"logo_url" json:"logo_url"`
-	ID          string      `db:"id" json:"id"`
+	StoreID     string      `db:"store_id" json:"store_id"`
 }
 
 func (q *Queries) UpdateStoreProfile(ctx context.Context, arg UpdateStoreProfileParams) (StoreProfile, error) {
 	row := q.db.QueryRow(ctx, updateStoreProfile,
-		arg.Name,
 		arg.Description,
 		arg.Address,
 		arg.Phone,
 		arg.Email,
 		arg.TaxID,
 		arg.LogoUrl,
-		arg.ID,
+		arg.StoreID,
 	)
 	var i StoreProfile
 	err := row.Scan(
-		&i.ID,
-		&i.Name,
+		&i.StoreID,
 		&i.Description,
 		&i.Address,
 		&i.Phone,
 		&i.Email,
 		&i.TaxID,
 		&i.LogoUrl,
-		&i.CreatedAt,
+		&i.ReceiptFooter,
 		&i.UpdatedAt,
 	)
 	return i, err

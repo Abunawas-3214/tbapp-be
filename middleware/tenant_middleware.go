@@ -24,7 +24,7 @@ func TenantMiddleware(dbPool *pgxpool.Pool) fiber.Handler {
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		secretKey := os.Getenv("JWT_SECRET")
-		token, err := jwt.ParseWithClaims(tokenString, &security.CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenString, &security.CustomClaims{}, func(t *jwt.Token) (any, error) {
 			return []byte(secretKey), nil
 		})
 

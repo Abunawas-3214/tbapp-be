@@ -9,3 +9,8 @@ VALUES ($1, $2);
 
 -- name: GetStoreBySlug :one
 SELECT * FROM public.stores WHERE slug = $1 LIMIT 1;
+
+-- name: UpdateStoreName :exec
+UPDATE stores 
+SET name = $2, updated_at = CURRENT_TIMESTAMP 
+WHERE id = $1;

@@ -10,6 +10,7 @@ import (
 
 	_ "tbapp-be/docs"
 
+	"tbapp-be/modules/app/store_profile"
 	"tbapp-be/modules/global/auth"
 	"tbapp-be/modules/global/sysadmin"
 	"tbapp-be/modules/global/tenant"
@@ -64,6 +65,11 @@ func main() {
 	tenantService := tenant.NewService(repoPublic, repoTenant, dbPool)
 	tenantHandler := tenant.NewHandler(tenantService)
 	tenantHandler.RegisterRoutes(globalGroup)
+
+	// Module: Store Profile
+	storeProfileService := store_profile.NewService(repoPublic, repoTenant, dbPool)
+	storeProfileHandler := store_profile.NewHandler(storeProfileService)
+	storeProfileHandler.RegisterRoutes(tenantGroup)
 
 	// Swagger
 	cfg := swagger.Config{

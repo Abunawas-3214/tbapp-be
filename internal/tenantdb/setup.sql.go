@@ -12,7 +12,7 @@ import (
 const createEmployee = `-- name: CreateEmployee :one
 INSERT INTO employees (id, user_id, full_name, role_id)
 VALUES ($1, $2, $3, $4)
-RETURNING id, user_id, full_name, position, phone, address, photo, citizen_id, base_salary, join_date, is_active, role_id
+RETURNING id, user_id, full_name, gender, position, phone, email, address, photo, citizen_id, base_salary, join_date, is_active, role_id
 `
 
 type CreateEmployeeParams struct {
@@ -34,8 +34,10 @@ func (q *Queries) CreateEmployee(ctx context.Context, arg CreateEmployeeParams) 
 		&i.ID,
 		&i.UserID,
 		&i.FullName,
+		&i.Gender,
 		&i.Position,
 		&i.Phone,
+		&i.Email,
 		&i.Address,
 		&i.Photo,
 		&i.CitizenID,

@@ -42,6 +42,7 @@ type Querier interface {
 	// Menampilkan daftar admin beserta info user-nya (Join)
 	ListAllSystemAdmins(ctx context.Context) ([]ListAllSystemAdminsRow, error)
 	UpdateAdminLevel(ctx context.Context, arg UpdateAdminLevelParams) error
+	UpdateStoreName(ctx context.Context, arg UpdateStoreNameParams) error
 	UpdateSystemAdmin(ctx context.Context, arg UpdateSystemAdminParams) error
 	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

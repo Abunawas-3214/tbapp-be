@@ -5,15 +5,104 @@
 package tenantdb
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type AdminLevel string
+
+const (
+	AdminLevelSUPERADMIN AdminLevel = "SUPERADMIN"
+	AdminLevelADMIN      AdminLevel = "ADMIN"
+)
+
+func (e *AdminLevel) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = AdminLevel(s)
+	case string:
+		*e = AdminLevel(s)
+	default:
+		return fmt.Errorf("unsupported scan type for AdminLevel: %T", src)
+	}
+	return nil
+}
+
+type NullAdminLevel struct {
+	AdminLevel AdminLevel `json:"admin_level"`
+	Valid      bool       `json:"valid"` // Valid is true if AdminLevel is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullAdminLevel) Scan(value interface{}) error {
+	if value == nil {
+		ns.AdminLevel, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.AdminLevel.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullAdminLevel) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.AdminLevel), nil
+}
+
+type Gender string
+
+const (
+	GenderLAKILAKI  Gender = "LAKI-LAKI"
+	GenderPEREMPUAN Gender = "PEREMPUAN"
+)
+
+func (e *Gender) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Gender(s)
+	case string:
+		*e = Gender(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Gender: %T", src)
+	}
+	return nil
+}
+
+type NullGender struct {
+	Gender Gender `json:"gender"`
+	Valid  bool   `json:"valid"` // Valid is true if Gender is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullGender) Scan(value interface{}) error {
+	if value == nil {
+		ns.Gender, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Gender.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullGender) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Gender), nil
+}
 
 type Employee struct {
 	ID         string           `db:"id" json:"id"`
 	UserID     string           `db:"user_id" json:"user_id"`
 	FullName   string           `db:"full_name" json:"full_name"`
+	Gender     NullGender       `db:"gender" json:"gender"`
 	Position   pgtype.Text      `db:"position" json:"position"`
 	Phone      pgtype.Text      `db:"phone" json:"phone"`
+	Email      pgtype.Text      `db:"email" json:"email"`
 	Address    pgtype.Text      `db:"address" json:"address"`
 	Photo      pgtype.Text      `db:"photo" json:"photo"`
 	CitizenID  pgtype.Text      `db:"citizen_id" json:"citizen_id"`
@@ -29,15 +118,50 @@ type Role struct {
 	Permissions []byte `db:"permissions" json:"permissions"`
 }
 
+type Store struct {
+	ID         string             `db:"id" json:"id"`
+	Name       string             `db:"name" json:"name"`
+	Slug       string             `db:"slug" json:"slug"`
+	SchemaName string             `db:"schema_name" json:"schema_name"`
+	IsActive   bool               `db:"is_active" json:"is_active"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type StoreProfile struct {
-	ID          string           `db:"id" json:"id"`
-	Name        string           `db:"name" json:"name"`
-	Description pgtype.Text      `db:"description" json:"description"`
-	Address     pgtype.Text      `db:"address" json:"address"`
-	Phone       pgtype.Text      `db:"phone" json:"phone"`
-	Email       pgtype.Text      `db:"email" json:"email"`
-	TaxID       pgtype.Text      `db:"tax_id" json:"tax_id"`
-	LogoUrl     pgtype.Text      `db:"logo_url" json:"logo_url"`
-	CreatedAt   pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt   pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	StoreID       string           `db:"store_id" json:"store_id"`
+	Description   pgtype.Text      `db:"description" json:"description"`
+	Address       pgtype.Text      `db:"address" json:"address"`
+	Phone         pgtype.Text      `db:"phone" json:"phone"`
+	Email         pgtype.Text      `db:"email" json:"email"`
+	TaxID         pgtype.Text      `db:"tax_id" json:"tax_id"`
+	LogoUrl       pgtype.Text      `db:"logo_url" json:"logo_url"`
+	ReceiptFooter pgtype.Text      `db:"receipt_footer" json:"receipt_footer"`
+	UpdatedAt     pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+}
+
+type SystemAdmin struct {
+	ID        string             `db:"id" json:"id"`
+	UserID    string             `db:"user_id" json:"user_id"`
+	Level     AdminLevel         `db:"level" json:"level"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type User struct {
+	ID            string             `db:"id" json:"id"`
+	Name          string             `db:"name" json:"name"`
+	Email         string             `db:"email" json:"email"`
+	EmailVerified pgtype.Timestamptz `db:"email_verified" json:"email_verified"`
+	Image         pgtype.Text        `db:"image" json:"image"`
+	PasswordHash  pgtype.Text        `db:"password_hash" json:"password_hash"`
+	IsActive      bool               `db:"is_active" json:"is_active"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type UserStoreAccess struct {
+	ID         string             `db:"id" json:"id"`
+	UserID     string             `db:"user_id" json:"user_id"`
+	StoreID    string             `db:"store_id" json:"store_id"`
+	IsActive   bool               `db:"is_active" json:"is_active"`
+	AssignedAt pgtype.Timestamptz `db:"assigned_at" json:"assigned_at"`
 }
