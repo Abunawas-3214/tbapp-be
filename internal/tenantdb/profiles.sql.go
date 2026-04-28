@@ -33,14 +33,22 @@ func (q *Queries) GetStoreProfile(ctx context.Context) (StoreProfile, error) {
 	return i, err
 }
 
-const updateStoreProfile = `-- name: UpdateStoreProfile :exec
-UPDATE store_profiles 
-SET name = $2, description = $3, address = $4, phone = $5, email = $6, tax_id = $7, logo_url = $8, updated_at = CURRENT_TIMESTAMP
-WHERE id = $1
+const updateStoreProfile = `-- name: UpdateStoreProfile :one
+UPDATE store_profiles
+SET 
+    name = $1,
+    description = $2,
+    address = $3,
+    phone = $4,
+    email = $5,
+    tax_id = $6,
+    logo_url = $7,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $8
+RETURNING id, name, description, address, phone, email, tax_id, logo_url, created_at, updated_at
 `
 
 type UpdateStoreProfileParams struct {
-	ID          string      `db:"id" json:"id"`
 	Name        string      `db:"name" json:"name"`
 	Description pgtype.Text `db:"description" json:"description"`
 	Address     pgtype.Text `db:"address" json:"address"`
@@ -48,11 +56,11 @@ type UpdateStoreProfileParams struct {
 	Email       pgtype.Text `db:"email" json:"email"`
 	TaxID       pgtype.Text `db:"tax_id" json:"tax_id"`
 	LogoUrl     pgtype.Text `db:"logo_url" json:"logo_url"`
+	ID          string      `db:"id" json:"id"`
 }
 
-func (q *Queries) UpdateStoreProfile(ctx context.Context, arg UpdateStoreProfileParams) error {
-	_, err := q.db.Exec(ctx, updateStoreProfile,
-		arg.ID,
+func (q *Queries) UpdateStoreProfile(ctx context.Context, arg UpdateStoreProfileParams) (StoreProfile, error) {
+	row := q.db.QueryRow(ctx, updateStoreProfile,
 		arg.Name,
 		arg.Description,
 		arg.Address,
@@ -60,6 +68,20 @@ func (q *Queries) UpdateStoreProfile(ctx context.Context, arg UpdateStoreProfile
 		arg.Email,
 		arg.TaxID,
 		arg.LogoUrl,
+		arg.ID,
 	)
-	return err
+	var i StoreProfile
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Address,
+		&i.Phone,
+		&i.Email,
+		&i.TaxID,
+		&i.LogoUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

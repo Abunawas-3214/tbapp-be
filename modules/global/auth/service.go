@@ -113,6 +113,7 @@ func (s *Service) SelectStore(ctx context.Context, userID string, req SelectStor
 		user.Name,
 		user.Email,
 		selectedStore.ID,
+		selectedStore.Slug,
 		selectedStore.SchemaName,
 		secretKey,
 		24,

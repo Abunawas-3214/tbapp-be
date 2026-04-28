@@ -6,6 +6,7 @@ import (
 	"tbapp-be/config"
 	"tbapp-be/internal/db"
 	"tbapp-be/internal/tenantdb"
+	"tbapp-be/middleware"
 
 	_ "tbapp-be/docs"
 
@@ -46,6 +47,8 @@ func main() {
 	app := fiber.New()
 	api := app.Group("/api/v1")
 	globalGroup := api.Group("/global")
+	tenantGroup := api.Group("/app/:store_slug")
+	tenantGroup.Use(middleware.TenantMiddleware(dbPool))
 
 	// Module: Auth
 	authService := auth.NewService(repoPublic)
