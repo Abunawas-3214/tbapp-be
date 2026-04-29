@@ -41,7 +41,9 @@ func AuthMiddleware() fiber.Handler {
 
 		// INI YANG DICARI HANDLER TADI:
 		c.Locals("user_id", claims.UserID)
+		c.Locals("user_email", claims.Email)
 		c.Locals("user_name", claims.Name)
+		c.Locals("admin_level", claims.AdminLevel)
 
 		return c.Next()
 	}

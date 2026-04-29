@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	CreateEmployee(ctx context.Context, arg CreateEmployeeParams) (Employee, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
+	CreateStoreProfile(ctx context.Context, storeID string) (string, error)
 	GetStoreProfile(ctx context.Context, id string) (GetStoreProfileRow, error)
 	UpdateStoreProfile(ctx context.Context, arg UpdateStoreProfileParams) (StoreProfile, error)
 }

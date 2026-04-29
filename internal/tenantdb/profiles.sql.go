@@ -11,6 +11,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createStoreProfile = `-- name: CreateStoreProfile :one
+INSERT INTO store_profiles (
+    store_id
+) VALUES (
+    $1
+) RETURNING store_id
+`
+
+func (q *Queries) CreateStoreProfile(ctx context.Context, storeID string) (string, error) {
+	row := q.db.QueryRow(ctx, createStoreProfile, storeID)
+	var store_id string
+	err := row.Scan(&store_id)
+	return store_id, err
+}
+
 const getStoreProfile = `-- name: GetStoreProfile :one
 SELECT 
     s.id as store_id,

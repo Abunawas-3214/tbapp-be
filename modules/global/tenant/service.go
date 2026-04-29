@@ -106,7 +106,13 @@ func (s *Service) CreateTenant(ctx context.Context, req *CreateTenantRequest) (*
 		return nil, fmt.Errorf("gagal membuat data employee owner: %w", err)
 	}
 
-	// 6. Selesai
+	// 6. KONEKSI PROFILE STORE DENGAN skema PUBLIC
+	_, err = tqtx.CreateStoreProfile(ctx, store.ID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal membuat profil toko: %w", err)
+	}
+
+	// 7. Selesai
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}

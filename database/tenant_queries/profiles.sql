@@ -1,3 +1,10 @@
+-- name: CreateStoreProfile :one
+INSERT INTO store_profiles (
+    store_id
+) VALUES (
+    $1
+) RETURNING store_id;
+
 -- name: GetStoreProfile :one
 SELECT 
     s.id as store_id,

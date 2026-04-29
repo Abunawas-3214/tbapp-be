@@ -47,8 +47,11 @@ func main() {
 	// 3. Setup Fiber
 	app := fiber.New()
 	api := app.Group("/api/v1")
-	globalGroup := api.Group("/global")
+	globalGroup := api.Group("/")
+	adminGroup := api.Group("/admin")
 	tenantGroup := api.Group("/app/:store_slug")
+	adminGroup.Use(middleware.AuthMiddleware())
+	adminGroup.Use(middleware.RoleAdminGuard())
 	tenantGroup.Use(middleware.TenantMiddleware(dbPool))
 
 	// Module: Auth
@@ -59,12 +62,12 @@ func main() {
 	// Module: Sysadmin
 	adminService := sysadmin.NewService(repoPublic, dbPool)
 	adminHandler := sysadmin.NewHandler(adminService)
-	adminHandler.RegisterRoutes(globalGroup)
+	adminHandler.RegisterRoutes(adminGroup)
 
 	// Module: Tenant
 	tenantService := tenant.NewService(repoPublic, repoTenant, dbPool)
 	tenantHandler := tenant.NewHandler(tenantService)
-	tenantHandler.RegisterRoutes(globalGroup)
+	tenantHandler.RegisterRoutes(adminGroup)
 
 	// Module: Store Profile
 	storeProfileService := store_profile.NewService(repoPublic, repoTenant, dbPool)
