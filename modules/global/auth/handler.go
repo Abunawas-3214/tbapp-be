@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"tbapp-be/common/security"
+
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -36,7 +38,10 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		})
 	}
 
-	// 4. Jika berhasil, kirim response sukses beserta Token JWT
+	// 4. Set Cookie
+	security.SetAuthCookie(c, "access_token", res.Token)
+
+	// 5. Jika berhasil, kirim response sukses beserta Token JWT
 	return c.Status(200).JSON(fiber.Map{
 		"message": "Login berhasil, selamat datang!",
 		"data":    res,
@@ -63,6 +68,9 @@ func (h *Handler) SelectStore(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(403).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Set Cookie khusus Tenant
+	security.SetAuthCookie(c, "tenant_token", res.Token)
 
 	return c.Status(200).JSON(fiber.Map{
 		"message": res.Message,
