@@ -48,6 +48,13 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 
 	stores, _ := s.repo.GetUserStores(ctx, user.ID)
 	var storeDTOs []StoreAccessDTO
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("gagal memulai sesi validasi toko: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
 	for _, st := range stores {
 		storeDTOs = append(storeDTOs, StoreAccessDTO{
 			ID:         st.ID,
