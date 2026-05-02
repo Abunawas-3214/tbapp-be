@@ -13,18 +13,20 @@ import (
 
 const getTenantEmployeeRole = `-- name: GetTenantEmployeeRole :one
 SELECT 
+e.id AS employee_id,
     e.user_id,
     e.is_active,
     r.id AS role_id,
     r.name AS role_name,
     r.permissions
 FROM employees e
-JOIN roles r ON e.roleId = r.id
-WHERE e.user_id = $1 AND e.isActive = true 
+JOIN roles r ON e.role_id = r.id
+WHERE e.user_id = $1 AND e.is_active = true 
 LIMIT 1
 `
 
 type GetTenantEmployeeRoleRow struct {
+	EmployeeID  string      `db:"employee_id" json:"employee_id"`
 	UserID      string      `db:"user_id" json:"user_id"`
 	IsActive    pgtype.Bool `db:"is_active" json:"is_active"`
 	RoleID      string      `db:"role_id" json:"role_id"`
@@ -38,6 +40,7 @@ func (q *Queries) GetTenantEmployeeRole(ctx context.Context, userID string) (Get
 	row := q.db.QueryRow(ctx, getTenantEmployeeRole, userID)
 	var i GetTenantEmployeeRoleRow
 	err := row.Scan(
+		&i.EmployeeID,
 		&i.UserID,
 		&i.IsActive,
 		&i.RoleID,

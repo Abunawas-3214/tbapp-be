@@ -57,13 +57,11 @@ func GenerateToken(userId, name, email string, level *string, secretKey string, 
 func GenerateTenantToken(userId, name, email string, role string, permissions map[string]any, storeId, storeSlug, schemaName string, secretKey string, expiryHours int) (string, error) {
 	claims := TenantClaims{
 		User: TenantTokenUserDTO{
-			UserID: userId,
-			Name:   name,
-			Email:  email,
-			Role:   role,
-			Permissions: map[string]any{
-				"dashboard": "read",
-			},
+			UserID:      userId,
+			Name:        name,
+			Email:       email,
+			Role:        role,
+			Permissions: permissions,
 		},
 		Store: TenantTokenStoreDTO{
 			StoreID:    storeId,

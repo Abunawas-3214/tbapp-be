@@ -120,7 +120,7 @@ func (s *Service) SelectStore(ctx context.Context, userID string, req SelectStor
 	defer tx.Rollback(ctx)
 
 	// Set search_path ke skema toko agar query sqlc mencari ke tabel yang benar
-	_, err = tx.Exec(ctx, fmt.Sprintf("SET LOCAL search_path TO %s", selectedStore.SchemaName))
+	_, err = tx.Exec(ctx, fmt.Sprintf("SET LOCAL search_path TO %q", selectedStore.SchemaName))
 	if err != nil {
 		return nil, fmt.Errorf("gagal berpindah ke skema toko: %w", err)
 	}
@@ -132,7 +132,7 @@ func (s *Service) SelectStore(ctx context.Context, userID string, req SelectStor
 	empRole, err := tqtx.GetTenantEmployeeRole(ctx, userID)
 	if err != nil {
 		// Jika tidak ditemukan di tabel employees tenant tersebut
-		return nil, errors.New("anda tidak terdaftar sebagai karyawan di toko ini")
+		return nil, fmt.Errorf("Gagal mengambil data karyawan (DB Error: %w)", err)
 	}
 
 	// Parsing JSON permissions dari database ([]byte) ke map Go

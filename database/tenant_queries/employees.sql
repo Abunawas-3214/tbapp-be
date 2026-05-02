@@ -2,14 +2,15 @@
 -- Mengambil data lengkap karyawan beserta role dan permission-nya
 -- Digunakan saat proses Select Store untuk mengisi klaim JWT Tenant
 SELECT 
+e.id AS employee_id,
     e.user_id,
     e.is_active,
     r.id AS role_id,
     r.name AS role_name,
     r.permissions
 FROM employees e
-JOIN roles r ON e.roleId = r.id
-WHERE e.user_id = $1 AND e.isActive = true 
+JOIN roles r ON e.role_id = r.id
+WHERE e.user_id = $1 AND e.is_active = true 
 LIMIT 1;
 
 -- name: ListEmployeesWithRoles :many
