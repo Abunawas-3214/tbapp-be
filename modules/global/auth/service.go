@@ -2,19 +2,26 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"tbapp-be/common/security"
 	"tbapp-be/internal/db"
+
+	"tbapp-be/internal/tenantdb"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Service struct {
-	repo *db.Queries
+	repo  *db.Queries
+	tRepo *tenantdb.Queries
+	pool  *pgxpool.Pool
 }
 
-func NewService(r *db.Queries) *Service {
-	return &Service{repo: r}
+func NewService(r *db.Queries, tr *tenantdb.Queries, p *pgxpool.Pool) *Service {
+	return &Service{repo: r, tRepo: tr, pool: p}
 }
 
 func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
@@ -106,12 +113,42 @@ func (s *Service) SelectStore(ctx context.Context, userID string, req SelectStor
 		return nil, errors.New("anda tidak memiliki izin untuk mengakses toko ini")
 	}
 
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Set search_path ke skema toko agar query sqlc mencari ke tabel yang benar
+	_, err = tx.Exec(ctx, fmt.Sprintf("SET LOCAL search_path TO %s", selectedStore.SchemaName))
+	if err != nil {
+		return nil, fmt.Errorf("gagal berpindah ke skema toko: %w", err)
+	}
+
+	// Gunakan repository dengan transaksi (WithTx)
+	tqtx := s.tRepo.WithTx(tx)
+
+	// Ambil data Role & Permission dari tabel employees & roles milik tenant
+	empRole, err := tqtx.GetTenantEmployeeRole(ctx, userID)
+	if err != nil {
+		// Jika tidak ditemukan di tabel employees tenant tersebut
+		return nil, errors.New("anda tidak terdaftar sebagai karyawan di toko ini")
+	}
+
+	// Parsing JSON permissions dari database ([]byte) ke map Go
+	var permissions map[string]interface{}
+	if err := json.Unmarshal(empRole.Permissions, &permissions); err != nil {
+		permissions = make(map[string]interface{})
+	}
+
 	// 3. Generate Tenant Token
 	secretKey := os.Getenv("JWT_SECRET")
 	token, err := security.GenerateTenantToken(
 		user.ID,
 		user.Name,
 		user.Email,
+		empRole.RoleName,
+		permissions,
 		selectedStore.ID,
 		selectedStore.Slug,
 		selectedStore.SchemaName,
@@ -123,8 +160,14 @@ func (s *Service) SelectStore(ctx context.Context, userID string, req SelectStor
 		return nil, fmt.Errorf("gagal menerbitkan token toko: %w", err)
 	}
 
+	// Commit transaksi (meskipun hanya SELECT, praktik ini menjaga koneksi tetap bersih)
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
 	return &SelectStoreResponse{
 		Token:      token,
+		StoreName:  selectedStore.Name,
 		SchemaName: selectedStore.SchemaName,
 		Message:    fmt.Sprintf("Berhasil masuk ke ruang kerja %s", selectedStore.Name),
 	}, nil

@@ -55,7 +55,7 @@ func main() {
 	tenantGroup.Use(middleware.TenantMiddleware(dbPool))
 
 	// Module: Auth
-	authService := auth.NewService(repoPublic)
+	authService := auth.NewService(repoPublic, repoTenant, dbPool)
 	authHandler := auth.NewHandler(authService)
 	authHandler.RegisterRoutes(globalGroup)
 

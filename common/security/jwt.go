@@ -17,6 +17,26 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+type TenantTokenUserDTO struct {
+	UserID      string         `json:"user_id"`
+	Name        string         `json:"name"`
+	Email       string         `json:"email"`
+	Role        string         `json:"role"`
+	Permissions map[string]any `json:"permissions"`
+}
+
+type TenantTokenStoreDTO struct {
+	StoreID    string `json:"store_id"`
+	StoreSlug  string `json:"store_slug"`
+	SchemaName string `json:"schema_name"`
+}
+
+type TenantClaims struct {
+	User  TenantTokenUserDTO  `json:"user"`
+	Store TenantTokenStoreDTO `json:"store"`
+	jwt.RegisteredClaims
+}
+
 func GenerateToken(userId, name, email string, level *string, secretKey string, expiryHours int) (string, error) {
 	claims := CustomClaims{
 		UserID:     userId,
@@ -34,14 +54,22 @@ func GenerateToken(userId, name, email string, level *string, secretKey string, 
 	return token.SignedString([]byte(secretKey))
 }
 
-func GenerateTenantToken(userId, name, email string, storeId, storeSlug, schemaName string, secretKey string, expiryHours int) (string, error) {
-	claims := CustomClaims{
-		UserID:     userId,
-		Name:       name,
-		Email:      email,
-		StoreID:    &storeId,
-		StoreSlug:  &storeSlug,
-		SchemaName: &schemaName,
+func GenerateTenantToken(userId, name, email string, role string, permissions map[string]any, storeId, storeSlug, schemaName string, secretKey string, expiryHours int) (string, error) {
+	claims := TenantClaims{
+		User: TenantTokenUserDTO{
+			UserID: userId,
+			Name:   name,
+			Email:  email,
+			Role:   role,
+			Permissions: map[string]any{
+				"dashboard": "read",
+			},
+		},
+		Store: TenantTokenStoreDTO{
+			StoreID:    storeId,
+			StoreSlug:  storeSlug,
+			SchemaName: schemaName,
+		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expiryHours) * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

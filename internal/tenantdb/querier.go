@@ -13,6 +13,11 @@ type Querier interface {
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateStoreProfile(ctx context.Context, storeID string) (string, error)
 	GetStoreProfile(ctx context.Context, id string) (GetStoreProfileRow, error)
+	// Mengambil data lengkap karyawan beserta role dan permission-nya
+	// Digunakan saat proses Select Store untuk mengisi klaim JWT Tenant
+	GetTenantEmployeeRole(ctx context.Context, userID string) (GetTenantEmployeeRoleRow, error)
+	// Mengambil daftar semua karyawan di dalam toko/tenant
+	ListEmployeesWithRoles(ctx context.Context) ([]ListEmployeesWithRolesRow, error)
 	UpdateStoreProfile(ctx context.Context, arg UpdateStoreProfileParams) (StoreProfile, error)
 }
 

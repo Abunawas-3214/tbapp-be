@@ -29,6 +29,7 @@ type SelectStoreRequest struct {
 
 type SelectStoreResponse struct {
 	Token      string `json:"token"`
+	StoreName  string `json:"store_name"`
 	SchemaName string `json:"schema_name"`
 	Message    string `json:"message"`
 }
