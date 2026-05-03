@@ -55,14 +55,30 @@ func (s *Service) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 	}
 	defer tx.Rollback(ctx)
 
+	tqtx := s.tRepo.WithTx(tx)
+
 	for _, st := range stores {
+		role := ""
+
+		_, err = tx.Exec(ctx, fmt.Sprintf("SET LOCAL search_path TO %q", st.SchemaName))
+		if err != nil {
+			return nil, fmt.Errorf("gagal berpindah ke skema toko: %w", err)
+		}
+
+		empRole, err := tqtx.GetTenantEmployeeRole(ctx, user.ID)
+		if err == nil {
+			role = empRole.RoleName
+		}
 		storeDTOs = append(storeDTOs, StoreAccessDTO{
 			ID:         st.ID,
 			Name:       st.Name,
 			Slug:       st.Slug,
+			Role:       role,
 			SchemaName: st.SchemaName,
 		})
 	}
+
+	tx.Commit(ctx)
 
 	secretKey := os.Getenv("JWT_SECRET")
 	if secretKey == "" {
