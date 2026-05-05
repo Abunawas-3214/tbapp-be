@@ -27,6 +27,7 @@ type TenantTokenUserDTO struct {
 
 type TenantTokenStoreDTO struct {
 	StoreID    string `json:"store_id"`
+	StoreName  string `json:"store_name"`
 	StoreSlug  string `json:"store_slug"`
 	SchemaName string `json:"schema_name"`
 }
@@ -54,7 +55,7 @@ func GenerateToken(userId, name, email string, level *string, secretKey string, 
 	return token.SignedString([]byte(secretKey))
 }
 
-func GenerateTenantToken(userId, name, email string, role string, permissions map[string]any, storeId, storeSlug, schemaName string, secretKey string, expiryHours int) (string, error) {
+func GenerateTenantToken(userId, name, email string, role string, permissions map[string]any, storeId, storeName, storeSlug, schemaName string, secretKey string, expiryHours int) (string, error) {
 	claims := TenantClaims{
 		User: TenantTokenUserDTO{
 			UserID:      userId,
@@ -65,6 +66,7 @@ func GenerateTenantToken(userId, name, email string, role string, permissions ma
 		},
 		Store: TenantTokenStoreDTO{
 			StoreID:    storeId,
+			StoreName:  storeName,
 			StoreSlug:  storeSlug,
 			SchemaName: schemaName,
 		},
