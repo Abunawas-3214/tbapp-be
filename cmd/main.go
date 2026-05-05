@@ -46,6 +46,10 @@ func main() {
 
 	// 3. Setup Fiber
 	app := fiber.New()
+
+	// Security Middleware
+	middleware.SetupSecurity(app)
+
 	api := app.Group("/api/v1")
 	globalGroup := api.Group("/")
 	adminGroup := api.Group("/admin")
