@@ -5,6 +5,9 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type GoogleLoginRequest struct {
+	IDToken string `json:"id_token" validate:"required"`
+}
 type StoreAccessDTO struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`

@@ -12,6 +12,7 @@ import (
 	"tbapp-be/internal/tenantdb"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/api/idtoken"
 )
 
 type Service struct {
@@ -197,13 +198,80 @@ func (s *Service) SelectStore(ctx context.Context, userID string, req SelectStor
 	}, nil
 }
 
-func (s *Service) GoogleLogin(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
+func (s *Service) GoogleLogin(ctx context.Context, req GoogleLoginRequest) (*LoginResponse, error) {
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
 
-	payload, err := idtoken.Validate(context.Background(), tokenString, clientID)
+	payload, err := idtoken.Validate(ctx, req.IDToken, clientID)
 	if err != nil {
 		return nil, errors.New("token google tidak valid atau telah kadaluarsa")
 	}
 
-	return payload, nil
+	email, ok := payload.Claims["email"].(string)
+	if !ok {
+		return nil, errors.New("email tidak ditemukan dalam token google")
+	}
+
+	user, err := s.repo.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, errors.New("user tidak terdaftar di sistem kami")
+	}
+
+	if user.IsActive == false {
+		return nil, errors.New("akun Anda telah dinonaktifkan, hubungi superadmin")
+	}
+
+	var levelPtr *string
+	adminAccess, _ := s.repo.GetAdminAccess(ctx, user.ID)
+	if adminAccess != "" {
+		levelStr := string(adminAccess)
+		levelPtr = &levelStr
+	}
+
+	stores, _ := s.repo.GetUserStores(ctx, user.ID)
+	var storeDTOs []StoreAccessDTO
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("gagal memulai sesi validasi toko: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	tqtx := s.tRepo.WithTx(tx)
+
+	for _, st := range stores {
+		role := ""
+		// Berpindah skema secara lokal untuk cek role di tiap tenant
+		_, err = tx.Exec(ctx, fmt.Sprintf("SET LOCAL search_path TO %q", st.SchemaName))
+		if err == nil {
+			empRole, err := tqtx.GetTenantEmployeeRole(ctx, user.ID)
+			if err == nil {
+				role = empRole.RoleName
+			}
+		}
+		storeDTOs = append(storeDTOs, StoreAccessDTO{
+			ID:         st.ID,
+			Name:       st.Name,
+			Slug:       st.Slug,
+			Role:       role,
+			SchemaName: st.SchemaName,
+		})
+	}
+	tx.Commit(ctx)
+
+	// 6. Generate Internal JWT
+	secretKey := os.Getenv("JWT_SECRET")
+	token, err := security.GenerateToken(user.ID, user.Name, user.Email, levelPtr, secretKey, 24)
+	if err != nil {
+		return nil, fmt.Errorf("gagal menerbitkan akses internal: %w", err)
+	}
+
+	// 7. Compose Response
+	res := &LoginResponse{Token: token}
+	res.User.ID = user.ID
+	res.User.Name = user.Name
+	res.User.Email = user.Email
+	res.User.AdminLevel = levelPtr
+	res.Stores = storeDTOs
+
+	return res, nil
 }

@@ -4,6 +4,7 @@ import (
 	"tbapp-be/common/security"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog/log"
 )
 
 type Handler struct {
@@ -76,4 +77,28 @@ func (h *Handler) SelectStore(c fiber.Ctx) error {
 		"message": res.Message,
 		"data":    res,
 	})
+}
+
+func (h *Handler) GoogleLogin(c fiber.Ctx) error {
+	var req GoogleLoginRequest
+
+	// Bind JSON request
+	if err := c.Bind().JSON(&req); err != nil {
+		log.Error().Err(err).Msg("Format request tidak valid")
+		return c.Status(400).JSON(fiber.Map{"message": "Format request tidak valid"})
+	}
+
+	if req.IDToken == "" {
+		log.Error().Msg("Google ID Token wajib diisi")
+		return c.Status(400).JSON(fiber.Map{"message": "Google ID Token wajib diisi"})
+	}
+
+	// Panggil Service
+	res, err := h.service.GoogleLogin(c.Context(), req)
+	if err != nil {
+		log.Error().Err(err).Msg("Google login gagal")
+		return c.Status(401).JSON(fiber.Map{"message": err.Error()})
+	}
+
+	return c.JSON(res)
 }
