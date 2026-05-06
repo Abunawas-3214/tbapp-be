@@ -196,3 +196,14 @@ func (s *Service) SelectStore(ctx context.Context, userID string, req SelectStor
 		Message:    fmt.Sprintf("Berhasil masuk ke ruang kerja %s", selectedStore.Name),
 	}, nil
 }
+
+func (s *Service) GoogleLogin(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
+	clientID := os.Getenv("GOOGLE_CLIENT_ID")
+
+	payload, err := idtoken.Validate(context.Background(), tokenString, clientID)
+	if err != nil {
+		return nil, errors.New("token google tidak valid atau telah kadaluarsa")
+	}
+
+	return payload, nil
+}
