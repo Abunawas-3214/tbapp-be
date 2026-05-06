@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"tbapp-be/common/logger"
 	"tbapp-be/config"
 	"tbapp-be/internal/db"
 	"tbapp-be/internal/tenantdb"
@@ -31,6 +32,9 @@ import (
 // @host localhost:3000
 // @BasePath /api/v1
 func main() {
+	// Initialize logger
+	logger.InitLogger()
+
 	// Muat file .env
 	err := godotenv.Load()
 	if err != nil {
@@ -46,6 +50,12 @@ func main() {
 
 	// 3. Setup Fiber
 	app := fiber.New()
+
+	// Structured Logging Middleware
+	app.Use(middleware.StructuredLogger())
+
+	// Limiter Middeware
+	app.Use(middleware.GlobalLimiter())
 
 	// Security Middleware
 	middleware.SetupSecurity(app)
